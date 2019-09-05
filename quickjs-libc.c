@@ -28,18 +28,26 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
+#if !defined(_WIN32)
 #include <sys/time.h>
+#endif
 #include <time.h>
 #include <signal.h>
 #include <limits.h>
 #include <sys/stat.h>
+#if !defined(_WIN32)
 #include <dirent.h>
+#endif
 #if defined(_WIN32)
 #include <windows.h>
 #include <conio.h>
+typedef int64_t ssize_t;
+#define PATH_MAX MAX_PATH
 #else
 #include <dlfcn.h>
 #include <termios.h>
@@ -2067,9 +2075,15 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
         JS_DefinePropertyValueStr(ctx, obj, "size",
                                   JS_NewInt64(ctx, st.st_size),
                                   JS_PROP_C_W_E);
+#if defined(_WIN32)
+        JS_DefinePropertyValueStr(ctx, obj, "blocks",
+                                  JS_NewInt64(ctx, 0),
+                                  JS_PROP_C_W_E);
+#else
         JS_DefinePropertyValueStr(ctx, obj, "blocks",
                                   JS_NewInt64(ctx, st.st_blocks),
                                   JS_PROP_C_W_E);
+#endif
 #if defined(__APPLE__)
         JS_DefinePropertyValueStr(ctx, obj, "atime",
                                   JS_NewInt64(ctx, timespec_to_ms(&st.st_atimespec)),
@@ -2079,6 +2093,16 @@ static JSValue js_os_stat(JSContext *ctx, JSValueConst this_val,
                                   JS_PROP_C_W_E);
         JS_DefinePropertyValueStr(ctx, obj, "ctime",
                                   JS_NewInt64(ctx, timespec_to_ms(&st.st_ctimespec)),
+                                  JS_PROP_C_W_E);
+#elif defined(_WIN32)
+        JS_DefinePropertyValueStr(ctx, obj, "atime",
+                                  JS_NewInt64(ctx, timespec_to_ms(&st.st_atime)),
+                                  JS_PROP_C_W_E);
+        JS_DefinePropertyValueStr(ctx, obj, "mtime",
+                                  JS_NewInt64(ctx, timespec_to_ms(&st.st_mtime)),
+                                  JS_PROP_C_W_E);
+        JS_DefinePropertyValueStr(ctx, obj, "ctime",
+                                  JS_NewInt64(ctx, timespec_to_ms(&st.st_ctime)),
                                   JS_PROP_C_W_E);
 #else
         JS_DefinePropertyValueStr(ctx, obj, "atime",
@@ -2143,6 +2167,9 @@ static JSValue js_os_readlink(JSContext *ctx, JSValueConst this_val,
 static JSValue js_os_readdir(JSContext *ctx, JSValueConst this_val,
                              int argc, JSValueConst *argv)
 {
+#if defined(_WIN32)
+	return JS_EXCEPTION; /* FIXME: use FindFirstFile() etc. */
+#else
     const char *path;
     DIR *f;
     struct dirent *d;
@@ -2180,6 +2207,7 @@ static JSValue js_os_readdir(JSContext *ctx, JSValueConst this_val,
     closedir(f);
  done:
     return make_obj_error(ctx, obj, err);
+#endif
 }
 
 static void ms_to_timeval(struct timeval *tv, uint64_t v)
@@ -2263,15 +2291,21 @@ static const JSCFunctionListEntry js_os_funcs[] = {
     JS_CFUNC_MAGIC_DEF("lstat", 1, js_os_stat, 1 ),
     /* st_mode constants */
     OS_FLAG(S_IFMT),
+#if !defined(_WIN32)
     OS_FLAG(S_IFIFO),
+#endif
     OS_FLAG(S_IFCHR),
     OS_FLAG(S_IFDIR),
+#if !defined(_WIN32)
     OS_FLAG(S_IFBLK),
+#endif
     OS_FLAG(S_IFREG),
+#if !defined(_WIN32)
     OS_FLAG(S_IFSOCK),
     OS_FLAG(S_IFLNK),
     OS_FLAG(S_ISGID),
     OS_FLAG(S_ISUID),
+#endif
     JS_CFUNC_DEF("symlink", 2, js_os_symlink ),
     JS_CFUNC_DEF("readlink", 1, js_os_readlink ),
     JS_CFUNC_DEF("readdir", 1, js_os_readdir ),
