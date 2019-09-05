@@ -39597,6 +39597,11 @@ static JSValue js_math_random(JSContext *ctx, JSValueConst this_val,
     return __JS_NewFloat64(ctx, u.d - 1.0);
 }
 
+#if defined(_MSC_VER)
+static double const_floor(double x) { return floor(x); }
+static double const_ceil(double x) { return ceil(x); }
+#endif
+
 static const JSCFunctionListEntry js_math_funcs[] = {
     JS_CFUNC_MAGIC_DEF("min", 2, js_math_min_max, 0 ),
     JS_CFUNC_MAGIC_DEF("max", 2, js_math_min_max, 1 ),
@@ -39605,8 +39610,13 @@ static const JSCFunctionListEntry js_math_funcs[] = {
 #else
     JS_CFUNC_SPECIAL_DEF("abs", 1, f_f, fabs ),
 #endif
+#if defined(_MSC_VER)
+    JS_CFUNC_SPECIAL_DEF("floor", 1, f_f, const_floor ),
+    JS_CFUNC_SPECIAL_DEF("ceil", 1, f_f, const_ceil ),
+#else
     JS_CFUNC_SPECIAL_DEF("floor", 1, f_f, floor ),
     JS_CFUNC_SPECIAL_DEF("ceil", 1, f_f, ceil ),
+#endif
     JS_CFUNC_SPECIAL_DEF("round", 1, f_f, js_math_round ),
     JS_CFUNC_SPECIAL_DEF("sqrt", 1, f_f, sqrt ),
 
