@@ -1811,9 +1811,15 @@ static inline uint8_t *js_get_stack_pointer(void)
 
 static inline BOOL js_check_stack_overflow(JSContext *ctx, size_t alloca_size)
 {
+#if defined(_MSC_VER)
+    // FIXME: for now we ignore stack overflows because we want
+    // to call JS code from several threads
+    return FALSE;
+#else
     size_t size;
     size = ctx->stack_top - js_get_stack_pointer();
     return unlikely((size + alloca_size) > ctx->stack_size);
+#endif
 }
 #endif
 
