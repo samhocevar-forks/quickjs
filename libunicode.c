@@ -271,11 +271,7 @@ BOOL lre_is_case_ignorable(uint32_t c)
 
 /* character range */
 
-#if defined(_MSC_VER)
-static void cr_dump(CharRange *cr)
-#else
-static __attribute__((unused)) void cr_dump(CharRange *cr)
-#endif
+static __maybe_unused void cr_dump(CharRange *cr)
 {
     int i;
     for(i = 0; i < cr->len; i++)
