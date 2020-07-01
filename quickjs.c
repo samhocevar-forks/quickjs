@@ -1641,7 +1641,7 @@ static inline size_t js_def_malloc_usable_size(void *ptr)
     return malloc_size(ptr);
 #elif defined(_WIN32)
     return _msize(ptr);
-#elif defined(EMSCRIPTEN)
+#elif defined(EMSCRIPTEN) || defined(__UCLIBC__)
     return 0;
 #elif defined(__linux__) || defined(__NX__)
     return malloc_usable_size(ptr);
@@ -1715,7 +1715,7 @@ static const JSMallocFunctions def_malloc_funcs = {
     malloc_size,
 #elif defined(_WIN32)
     (size_t (*)(const void *))_msize,
-#elif defined(EMSCRIPTEN)
+#elif defined(EMSCRIPTEN) || defined(__UCLIBC__)
     NULL,
 #elif defined(__linux__) || defined(__NX__)
     (size_t (*)(const void *))malloc_usable_size,
@@ -11012,6 +11012,21 @@ static char *i64toa(char *buf_end, int64_t n, unsigned int base)
         *--q = '-';
     return q;
 }
+
+#if defined(__UCLIBC__) && defined(__mips__)
+#include <fpu_control.h>
+static int mips_fesetround(int round)
+{
+    fpu_control_t cw;
+    if (round & ~0x3)
+        return 1;
+    _FPU_GETCW(cw);
+    cw = (cw & ~0x3) | round;
+    _FPU_SETCW(cw);
+    return 0;
+}
+#define fesetround mips_fesetround
+#endif
 
 /* buf1 contains the printf result */
 static void js_ecvt1(double d, int n_digits, int *decpt, int *sign, char *buf,
