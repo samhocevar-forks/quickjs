@@ -3103,9 +3103,11 @@ static int bf_atof_internal(bf_t *r, slimb_t *pexponent,
             expn = -expn;
     }
     if (is_dec) {
+#ifdef USE_BF_DEC
         a->expn = expn + int_len;
         a->sign = is_neg;
         ret = bfdec_normalize_and_round((bfdec_t *)a, prec, flags);
+#endif
     } else if (radix_bits) {
         /* XXX: may overflow */
         if (!is_bin_exp)
@@ -5496,6 +5498,7 @@ static inline limb_t fast_udiv(limb_t a, const FastDivData *s)
     t0 = (a - t1) >> s->shift1;
     return (t1 + t0) >> s->shift2;
 }
+#endif
 
 /* contains 10^i */
 const limb_t mp_pow_dec[LIMB_DIGITS + 1] = {
@@ -5523,6 +5526,7 @@ const limb_t mp_pow_dec[LIMB_DIGITS + 1] = {
 #endif
 };
 
+#ifdef USE_BF_DEC
 /* precomputed from fast_udiv_init(10^i) */
 static const FastDivData mp_pow_div[LIMB_DIGITS + 1] = {
 #if LIMB_BITS == 32
