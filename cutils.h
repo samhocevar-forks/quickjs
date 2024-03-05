@@ -142,7 +142,17 @@ static inline int clz64(uint64_t a)
 {
 #if defined(_MSC_VER)
     unsigned long ret = 0;
+#if _WIN64 || !_WIN32
     _BitScanReverse64(&ret, a);
+#else
+    if ((uint32_t)a)
+        _BitScanReverse(&ret, (uint32_t)a);
+    else if (a)
+    {
+        _BitScanReverse(&ret, (uint32_t)(a >> 32));
+        ret += 32;
+    }
+#endif
     return (int)ret;
 #else
     return __builtin_clzll(a);
@@ -166,7 +176,17 @@ static inline int ctz64(uint64_t a)
 {
 #if defined(_MSC_VER)
     unsigned long ret = 0;
+#if _WIN64 || !_WIN32
     _BitScanForward64(&ret, a);
+#else
+    if (a >> 32)
+    {
+        _BitScanForward(&ret, (uint32_t)(a >> 32));
+        ret += 32;
+    }
+    else
+        _BitScanForward(&ret, (uint32_t)a);
+#endif
     return (int)ret;
 #else
     return __builtin_ctzll(a);
