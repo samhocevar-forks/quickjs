@@ -32,12 +32,20 @@
 #include <sys/time.h>
 #endif
 #include <time.h>
+#if !defined(__ORBIS__) && !defined(__PROSPERO__)
 #include <fenv.h>
+#endif
+#if defined(_WIN32)
+// Ensure NAN is a compile-time constant for Windows SDK >= 10.0.26100.0
+#define _UCRT_NOISY_NAN 1
+#endif
 #include <math.h>
 #if defined(__APPLE__)
 #include <malloc/malloc.h>
 #elif defined(__linux__) || defined(__NX__)
 #include <malloc.h>
+#elif defined(__ORBIS__) || defined(__PROSPERO__)
+// No header needed
 #elif defined(__FreeBSD__)
 #include <malloc_np.h>
 #endif
@@ -71,7 +79,7 @@
 
 /* define to include Atomics.* operations which depend on the OS
    threads */
-#if !defined(EMSCRIPTEN) && !defined(_MSC_VER)
+#if !defined(EMSCRIPTEN) && !defined(_MSC_VER) && !defined(__ORBIS__)
 #define CONFIG_ATOMICS
 #endif
 
@@ -11436,6 +11444,17 @@ static int mips_fesetround(int round)
     return 0;
 }
 #define fesetround mips_fesetround
+#endif
+
+#if defined(__ORBIS__) || defined(__PROSPERO__)
+static int sony_fesetround(int round)
+{
+    return 0;
+}
+#define fesetround sony_fesetround
+#define FE_TONEAREST 0
+#define FE_DOWNWARD 1
+#define FE_UPWARD 1
 #endif
 
 /* buf1 contains the printf result */
@@ -43376,7 +43395,7 @@ static int getTimezoneOffset(int64_t time)
         }
     }
     ti = time;
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__ORBIS__) || defined(__PROSPERO__)
     {
         struct tm *tm;
         time_t gm_ti, loc_ti;
